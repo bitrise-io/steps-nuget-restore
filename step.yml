@@ -1,0 +1,25 @@
+title: "Step nuget restore"
+summary: Step nuget restore
+description: |-
+  Step nuget restore
+website:
+source_code_url:
+support_url:
+host_os_tags:
+  - osx-10.10
+project_type_tags:
+  - xamarin
+type_tags:
+is_requires_admin_user: true
+is_always_run: false
+is_skippable: false
+dependencies: []
+run_if: ""
+inputs:
+  - xamarin_solution:
+    opts:
+      title: Path to Xamarin solution
+      description: |
+        Path to Xamarin solution
+      is_required: true
+      is_expand: true

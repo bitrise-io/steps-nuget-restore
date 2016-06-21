@@ -21,4 +21,16 @@ inputs:
       description: |
         Path to Xamarin solution
       is_required: true
-      is_expand: true
+  - nuget_version:
+    opts:
+      title: NuGet version
+      description: |
+        The default NuGet restore step uses the NuGet version that ships with Xamarin.
+
+        Specify this input if you would like to use a custom NuGet version.
+        You can find all the available NuGet distribution here: https://dist.nuget.org/index.html.
+
+        Format examples:
+
+        - 2.8.6
+        - latest

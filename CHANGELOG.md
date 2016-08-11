@@ -1,6 +1,15 @@
-## Changelog (Current version: 0.9.2)
+## Changelog (Current version: 0.9.3)
 
 -----------------
+
+### 0.9.3 (2016 Aug 11)
+
+* [85428b6] prepare for 0.9.3
+* [16240c4] Merge pull request #11 from bitrise-steplib/eval_fix
+* [26424fd] cmd call fix
+* [85765cb] indent with tab
+* [81c69b8] indentation
+* [bcda63a] do not run commands with eval
 
 ### 0.9.2 (2016 Jun 21)
 
@@ -14,4 +23,4 @@
 
 -----------------
 
-Updated: 2016 Jun 21
+Updated: 2016 Aug 11

@@ -53,15 +53,9 @@ function validate_required_file_input {
 		echo_fail "[!] Missing required input: ${key}"
 	fi
 
-  if [[ ! -e "${value}" ]] ; then
-    echo_fail "[!] File not exist at: ${value}"
-  fi
-}
-
-function print_and_run {
-  cmd="$1"
-  echo_details "${cmd}"
-  eval "${cmd}"
+	if [[ ! -e "${value}" ]] ; then
+		echo_fail "[!] File not exist at: ${value}"
+	fi
 }
 
 #=======================================
@@ -80,22 +74,25 @@ nuget="/Library/Frameworks/Mono.framework/Versions/Current/bin/nuget"
 
 # Install NuGet version
 if [[ -n "$nuget_version" ]] ; then
-  echo_info "Downloading NuGet version: $nuget_version"
+	echo_info "Downloading NuGet version: $nuget_version"
 
-  if [[ "$nuget_version" == "latest" ]] ; then
-    print_and_run "sudo $nuget update -self"
-  else
-    nuget_url="https://dist.nuget.org/win-x86-commandline/v$nuget_version/nuget.exe"
-    temp_path=$(mktemp -d)
-    nuget_path="$temp_path/nuget.exe"
+	if [[ "$nuget_version" == "latest" ]] ; then
+		echo_details "sudo $nuget update -self"
+		sudo "$nuget" update -self
+	else
+		nuget_url="https://dist.nuget.org/win-x86-commandline/v$nuget_version/nuget.exe"
+		temp_path=$(mktemp -d)
+		nuget_path="$temp_path/nuget.exe"
 
-    print_and_run "curl $nuget_url -o $nuget_path -s"
+		echo_details "curl $nuget_url -o $nuget_path -s"
+		curl "$nuget_url" -o "$nuget_path" -s
 
-    nuget="mono $nuget_path"
-  fi
+		nuget="mono $nuget_path"
+	fi
 fi
 
 # NuGet restore
 echo_info "NuGet restore"
 
-print_and_run "$nuget restore $xamarin_solution"
+echo_details "$nuget restore $xamarin_solution"
+$nuget restore "$xamarin_solution"

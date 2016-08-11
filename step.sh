@@ -95,4 +95,4 @@ fi
 echo_info "NuGet restore"
 
 echo_details "$nuget restore $xamarin_solution"
-"$nuget" restore "$xamarin_solution"
+$nuget restore "$xamarin_solution"

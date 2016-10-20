@@ -1,0 +1,35 @@
+{
+	"ImportPath": "github.com/bitrise-steplib/steps-nuget-restore",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/bitrise-io/go-utils/cmdex",
+			"Rev": "5c210e4691a5a75e5685d2e842a104ca55ec7697"
+		},
+		{
+			"ImportPath": "github.com/bitrise-io/go-utils/colorstring",
+			"Rev": "5c210e4691a5a75e5685d2e842a104ca55ec7697"
+		},
+		{
+			"ImportPath": "github.com/bitrise-io/go-utils/errorutil",
+			"Rev": "5c210e4691a5a75e5685d2e842a104ca55ec7697"
+		},
+		{
+			"ImportPath": "github.com/bitrise-io/go-utils/log",
+			"Rev": "5c210e4691a5a75e5685d2e842a104ca55ec7697"
+		},
+		{
+			"ImportPath": "github.com/bitrise-io/go-utils/pathutil",
+			"Rev": "5c210e4691a5a75e5685d2e842a104ca55ec7697"
+		},
+		{
+			"ImportPath": "github.com/bitrise-tools/go-xamarin/constants",
+			"Comment": "1.1.0-3-g10287b3",
+			"Rev": "10287b349b1e092231b93132b7109ed329196c77"
+		}
+	]
+}

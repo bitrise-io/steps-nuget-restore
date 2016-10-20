@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-utils/cmdex"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-tools/go-xamarin/constants"
 )
 
 // ConfigsModel ...
@@ -144,7 +145,7 @@ func main() {
 			}
 		}
 
-		nugetRestoreCmdArgs = []string{"mono", downloadPth}
+		nugetRestoreCmdArgs = []string{constants.MonoPath, downloadPth}
 	}
 
 	fmt.Println()
@@ -158,6 +159,9 @@ func main() {
 		log.Error("Failed to create Nuget command, error: %s", err)
 		os.Exit(1)
 	}
+
+	cmd.SetStdout(os.Stdout)
+	cmd.SetStderr(os.Stderr)
 
 	if err := cmd.Run(); err != nil {
 		log.Error("Nuget restore failed, error: %s", err)

@@ -1,6 +1,11 @@
-## Changelog (Current version: 0.9.3)
+## Changelog (Current version: 1.0.0)
 
 -----------------
+
+### 1.0.0 (2016 Oct 20)
+
+* [80a693e] create-release workflow
+* [7dbe8b9] Go toolkit (#13)
 
 ### 0.9.3 (2016 Aug 11)
 
@@ -23,4 +28,4 @@
 
 -----------------
 
-Updated: 2016 Aug 11
+Updated: 2016 Oct 20

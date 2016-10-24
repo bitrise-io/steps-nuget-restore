@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.0)
+## Changelog (Current version: 1.0.1)
 
 -----------------
+
+### 1.0.1 (2016 Oct 24)
+
+* [410676c] prepare for 1.0.1
+* [5d34151] typo fix (#14)
 
 ### 1.0.0 (2016 Oct 20)
 
@@ -28,4 +33,4 @@
 
 -----------------
 
-Updated: 2016 Oct 20
+Updated: 2016 Oct 24

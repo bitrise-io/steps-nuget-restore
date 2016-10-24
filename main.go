@@ -149,7 +149,7 @@ func main() {
 	}
 
 	fmt.Println()
-	log.Info("Restureing Nuget packages...")
+	log.Info("Restoring Nuget packages...")
 
 	nugetRestoreCmdArgs = append(nugetRestoreCmdArgs, "restore", configs.XamarinSolution)
 	log.Done("$ %s", cmdex.PrintableCommandArgs(false, nugetRestoreCmdArgs))

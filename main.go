@@ -165,7 +165,14 @@ func main() {
 	cmd.SetStderr(os.Stderr)
 
 	if err := retry.Times(1).Try(func(attempt uint) error {
-		return cmd.Run()
+		if attempt > 0 {
+			log.Warn("Attempt %s failed, retrying...", attempt)
+		}
+		if err := cmd.Run(); err != nil {
+			log.Error("Restore failed, error: %s", err)
+			return err
+		}
+		return nil
 	}); err != nil {
 		log.Error("Nuget restore failed, error: %s", err)
 		os.Exit(1)

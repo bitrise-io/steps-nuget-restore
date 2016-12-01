@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.1)
+## Changelog (Current version: 1.0.2)
 
 -----------------
+
+### 1.0.2 (2016 Dec 01)
+
+* [1b6008d] prepare for 1.0.2
+* [470ed66] Retry (#16)
 
 ### 1.0.1 (2016 Oct 24)
 
@@ -33,4 +38,4 @@
 
 -----------------
 
-Updated: 2016 Oct 24
+Updated: 2016 Dec 01

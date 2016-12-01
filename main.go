@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-utils/cmdex"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-tools/go-xamarin/constants"
 )
 
@@ -36,12 +37,12 @@ func (configs ConfigsModel) print() {
 
 func (configs ConfigsModel) validate() error {
 	if configs.XamarinSolution == "" {
-		return errors.New("No XamarinSolution parameter specified!")
+		return errors.New("no XamarinSolution parameter specified")
 	}
 	if exist, err := pathutil.IsPathExists(configs.XamarinSolution); err != nil {
-		return fmt.Errorf("Failed to check if XamarinSolution exist at: %s, error: %s", configs.XamarinSolution, err)
+		return fmt.Errorf("failed to check if XamarinSolution exist at: %s, error: %s", configs.XamarinSolution, err)
 	} else if !exist {
-		return fmt.Errorf("XamarinSolution not exist at: %s", configs.XamarinSolution)
+		return fmt.Errorf("xamarinSolution not exist at: %s", configs.XamarinSolution)
 	}
 
 	return nil
@@ -163,7 +164,16 @@ func main() {
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)
 
-	if err := cmd.Run(); err != nil {
+	if err := retry.Times(1).Try(func(attempt uint) error {
+		if attempt > 0 {
+			log.Warn("Attempt %s failed, retrying...", attempt)
+		}
+		if err := cmd.Run(); err != nil {
+			log.Error("Restore failed, error: %s", err)
+			return err
+		}
+		return nil
+	}); err != nil {
 		log.Error("Nuget restore failed, error: %s", err)
 		os.Exit(1)
 	}

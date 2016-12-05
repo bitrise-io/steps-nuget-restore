@@ -153,21 +153,23 @@ func main() {
 	log.Info("Restoring Nuget packages...")
 
 	nugetRestoreCmdArgs = append(nugetRestoreCmdArgs, "restore", configs.XamarinSolution)
-	log.Done("$ %s", cmdex.PrintableCommandArgs(false, nugetRestoreCmdArgs))
-
-	cmd, err := cmdex.NewCommandFromSlice(nugetRestoreCmdArgs)
-	if err != nil {
-		log.Error("Failed to create Nuget command, error: %s", err)
-		os.Exit(1)
-	}
-
-	cmd.SetStdout(os.Stdout)
-	cmd.SetStderr(os.Stderr)
 
 	if err := retry.Times(1).Try(func(attempt uint) error {
 		if attempt > 0 {
-			log.Warn("Attempt %s failed, retrying...", attempt)
+			log.Warn("Attempt %d failed, retrying...", attempt)
 		}
+
+		log.Done("$ %s", cmdex.PrintableCommandArgs(false, nugetRestoreCmdArgs))
+
+		cmd, err := cmdex.NewCommandFromSlice(nugetRestoreCmdArgs)
+		if err != nil {
+			log.Error("Failed to create Nuget command, error: %s", err)
+			os.Exit(1)
+		}
+
+		cmd.SetStdout(os.Stdout)
+		cmd.SetStderr(os.Stderr)
+
 		if err := cmd.Run(); err != nil {
 			log.Error("Restore failed, error: %s", err)
 			return err

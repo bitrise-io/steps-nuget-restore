@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.2)
+## Changelog (Current version: 1.0.3)
 
 -----------------
+
+### 1.0.3 (2016 Dec 05)
+
+* [bed53ce] prepare for 1.0.3
+* [7898122] retry fix (#17)
 
 ### 1.0.2 (2016 Dec 01)
 
@@ -38,4 +43,4 @@
 
 -----------------
 
-Updated: 2016 Dec 01
+Updated: 2016 Dec 05

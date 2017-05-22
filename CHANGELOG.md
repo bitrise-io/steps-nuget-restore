@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.3)
+## Changelog (Current version: 1.0.4)
 
 -----------------
+
+### 1.0.4 (2017 May 22)
+
+* [40d80c3] Prepare for 1.0.4
+* [9f9b459] fix for #18 (#19)
 
 ### 1.0.3 (2016 Dec 05)
 
@@ -43,4 +48,4 @@
 
 -----------------
 
-Updated: 2016 Dec 05
+Updated: 2017 May 22

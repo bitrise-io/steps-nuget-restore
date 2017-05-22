@@ -9,6 +9,7 @@ host_os_tags:
 project_type_tags:
   - xamarin
 type_tags:
+  - dependency
 is_requires_admin_user: true
 is_always_run: false
 is_skippable: false
@@ -28,7 +29,7 @@ inputs:
       description: |
         Path to Xamarin solution
       is_required: true
-  - nuget_version:
+  - nuget_version: latest
     opts:
       title: NuGet version
       description: |

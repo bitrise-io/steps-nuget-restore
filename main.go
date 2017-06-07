@@ -8,10 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bitrise-io/go-utils/cmdex"
+	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-tools/go-steputils/cache"
 	"github.com/bitrise-tools/go-xamarin/constants"
 )
 
@@ -29,10 +30,10 @@ func createConfigsModelFromEnvs() ConfigsModel {
 }
 
 func (configs ConfigsModel) print() {
-	log.Info("Configs:")
+	log.Infof("Configs:")
 
-	log.Detail("- XamarinSolution: %s", configs.XamarinSolution)
-	log.Detail("- NugetVersion: %s", configs.NugetVersion)
+	log.Printf("- XamarinSolution: %s", configs.XamarinSolution)
+	log.Printf("- NugetVersion: %s", configs.NugetVersion)
 }
 
 func (configs ConfigsModel) validate() error {
@@ -53,7 +54,7 @@ func DownloadFile(downloadURL, targetPath string) error {
 	outFile, err := os.Create(targetPath)
 	defer func() {
 		if err := outFile.Close(); err != nil {
-			log.Warn("Failed to close (%s)", targetPath)
+			log.Warnf("Failed to close (%s)", targetPath)
 		}
 	}()
 	if err != nil {
@@ -66,7 +67,7 @@ func DownloadFile(downloadURL, targetPath string) error {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Warn("failed to close (%s) body", downloadURL)
+			log.Warnf("failed to close (%s) body", downloadURL)
 		}
 	}()
 
@@ -89,7 +90,7 @@ func main() {
 	configs.print()
 
 	if err := configs.validate(); err != nil {
-		log.Error("Issue with input: %s", err)
+		log.Errorf("Issue with input: %s", err)
 		os.Exit(1)
 	}
 
@@ -98,30 +99,30 @@ func main() {
 
 	if configs.NugetVersion == "latest" {
 		fmt.Println()
-		log.Info("Updating Nuget to latest version...")
+		log.Infof("Updating Nuget to latest version...")
 		// "sudo $nuget update -self"
 		cmdArgs := []string{"sudo", nugetPth, "update", "-self"}
-		cmd, err := cmdex.NewCommandFromSlice(cmdArgs)
+		cmd, err := command.NewFromSlice(cmdArgs)
 		if err != nil {
-			log.Error("Failed to create command from args (%v), error: %s", cmdArgs, err)
+			log.Errorf("Failed to create command from args (%v), error: %s", cmdArgs, err)
 			os.Exit(1)
 		}
 
 		cmd.SetStdout(os.Stdout)
 		cmd.SetStderr(os.Stderr)
 
-		log.Done("$ %s", cmdex.PrintableCommandArgs(false, cmdArgs))
+		log.Donef("$ %s", command.PrintableCommandArgs(false, cmdArgs))
 
 		if err := cmd.Run(); err != nil {
-			log.Error("Failed to update nuget, error: %s", err)
+			log.Errorf("Failed to update nuget, error: %s", err)
 			os.Exit(1)
 		}
 	} else if configs.NugetVersion != "" {
 		fmt.Println()
-		log.Info("Downloading Nuget %s version...", configs.NugetVersion)
+		log.Infof("Downloading Nuget %s version...", configs.NugetVersion)
 		tmpDir, err := pathutil.NormalizedOSTempDirPath("__nuget__")
 		if err != nil {
-			log.Error("Failed to create tmp dir, error: %s", err)
+			log.Errorf("Failed to create tmp dir, error: %s", err)
 			os.Exit(1)
 		}
 
@@ -130,18 +131,18 @@ func main() {
 		// https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe
 		nugetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/v%s/nuget.exe", configs.NugetVersion)
 
-		log.Detail("Download URL: %s", nugetURL)
+		log.Printf("Download URL: %s", nugetURL)
 
 		if err := DownloadFile(nugetURL, downloadPth); err != nil {
-			log.Warn("Download failed, error: %s", err)
+			log.Warnf("Download failed, error: %s", err)
 
 			// https://dist.nuget.org/win-x86-commandline/v3.4.4/NuGet.exe
 			nugetURL = fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/v%s/NuGet.exe", configs.NugetVersion)
 
-			log.Detail("Retry download URl: %s", nugetURL)
+			log.Printf("Retry download URl: %s", nugetURL)
 
 			if err := DownloadFile(nugetURL, downloadPth); err != nil {
-				log.Error("Failed to download nuget, error: %s", err)
+				log.Errorf("Failed to download nuget, error: %s", err)
 				os.Exit(1)
 			}
 		}
@@ -150,20 +151,20 @@ func main() {
 	}
 
 	fmt.Println()
-	log.Info("Restoring Nuget packages...")
+	log.Infof("Restoring Nuget packages...")
 
 	nugetRestoreCmdArgs = append(nugetRestoreCmdArgs, "restore", configs.XamarinSolution)
 
 	if err := retry.Times(1).Try(func(attempt uint) error {
 		if attempt > 0 {
-			log.Warn("Attempt %d failed, retrying...", attempt)
+			log.Warnf("Attempt %d failed, retrying...", attempt)
 		}
 
-		log.Done("$ %s", cmdex.PrintableCommandArgs(false, nugetRestoreCmdArgs))
+		log.Donef("$ %s", command.PrintableCommandArgs(false, nugetRestoreCmdArgs))
 
-		cmd, err := cmdex.NewCommandFromSlice(nugetRestoreCmdArgs)
+		cmd, err := command.NewFromSlice(nugetRestoreCmdArgs)
 		if err != nil {
-			log.Error("Failed to create Nuget command, error: %s", err)
+			log.Errorf("Failed to create Nuget command, error: %s", err)
 			os.Exit(1)
 		}
 
@@ -171,12 +172,51 @@ func main() {
 		cmd.SetStderr(os.Stderr)
 
 		if err := cmd.Run(); err != nil {
-			log.Error("Restore failed, error: %s", err)
+			log.Errorf("Restore failed, error: %s", err)
 			return err
 		}
 		return nil
 	}); err != nil {
-		log.Error("Nuget restore failed, error: %s", err)
+		log.Errorf("Nuget restore failed, error: %s", err)
 		os.Exit(1)
+	}
+
+	// Collecting caches
+	fmt.Println()
+	log.Infof("Collecting NuGet cache...")
+
+	nugetCache := cache.New()
+
+	xamarinHomeCache := filepath.Join(pathutil.UserHomeDir(), ".local", "share", "Xamarin")
+
+	if exists, err := pathutil.IsPathExists(xamarinHomeCache); err != nil {
+		log.Warnf("Failed to determine if path (%s) exists, error: %s", xamarinHomeCache, err)
+	} else if exists {
+		nugetCache.IncludePath(xamarinHomeCache)
+	}
+
+	absProjectRoot, err := filepath.Abs(".")
+	if err != nil {
+		log.Warnf("Cache collection skipped: failed to determine project root path.")
+	} else {
+		err := filepath.Walk(absProjectRoot, func(path string, f os.FileInfo, err error) error {
+			if f.IsDir() {
+				if f.Name() == "packages" {
+					nugetCache.IncludePath(path)
+					return io.EOF
+				}
+			}
+			return nil
+		})
+		if err == io.EOF {
+			err = nil
+		}
+		if err != nil {
+			log.Warnf("Cache collection skipped: failed to determine cache paths.")
+		} else {
+			if err := nugetCache.Commit(); err != nil {
+				log.Warnf("Cache collection skipped: failed to commit cache paths.")
+			}
+		}
 	}
 }

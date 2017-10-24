@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.4)
+## Changelog (Current version: 1.0.5)
 
 -----------------
+
+### 1.0.5 (2017 Oct 24)
+
+* [22f5582] prepare for 1.0.5
+* [5d62968] Added built-in cache (#20)
 
 ### 1.0.4 (2017 May 22)
 
@@ -48,4 +53,4 @@
 
 -----------------
 
-Updated: 2017 May 22
+Updated: 2017 Oct 24

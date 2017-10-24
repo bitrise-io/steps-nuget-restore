@@ -40,6 +40,13 @@ workflows:
         title: Step Test
         inputs:
         - nuget_version: "3.4.4"
+    - script:
+        title: Print cache paths
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -e
+            echo $BITRISE_CACHE_INCLUDE_PATHS
 
   # ----------------------------------------------------------------
   # --- Utility workflows

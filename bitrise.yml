@@ -39,7 +39,7 @@ workflows:
     - path::./:
         title: Step Test
         inputs:
-        - nuget_version: "3.4.4"
+        - nuget_version: "latest"
     - script:
         title: Print cache paths
         inputs:

@@ -97,27 +97,7 @@ func main() {
 	nugetPth := "/Library/Frameworks/Mono.framework/Versions/Current/bin/nuget"
 	nugetRestoreCmdArgs := []string{nugetPth}
 
-	if configs.NugetVersion == "latest" {
-		fmt.Println()
-		log.Infof("Updating Nuget to latest version...")
-		// "sudo $nuget update -self"
-		cmdArgs := []string{"sudo", nugetPth, "update", "-self"}
-		cmd, err := command.NewFromSlice(cmdArgs)
-		if err != nil {
-			log.Errorf("Failed to create command from args (%v), error: %s", cmdArgs, err)
-			os.Exit(1)
-		}
-
-		cmd.SetStdout(os.Stdout)
-		cmd.SetStderr(os.Stderr)
-
-		log.Donef("$ %s", command.PrintableCommandArgs(false, cmdArgs))
-
-		if err := cmd.Run(); err != nil {
-			log.Errorf("Failed to update nuget, error: %s", err)
-			os.Exit(1)
-		}
-	} else if configs.NugetVersion != "" {
+	if configs.NugetVersion != "" {
 		fmt.Println()
 		log.Infof("Downloading Nuget %s version...", configs.NugetVersion)
 		tmpDir, err := pathutil.NormalizedOSTempDirPath("__nuget__")
@@ -129,7 +109,11 @@ func main() {
 		downloadPth := filepath.Join(tmpDir, "nuget.exe")
 
 		// https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe
-		nugetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/v%s/nuget.exe", configs.NugetVersion)
+		version := configs.NugetVersion
+		if version != "latest" {
+			version = `v` + version
+		}
+		nugetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/%s/nuget.exe", version)
 
 		log.Printf("Download URL: %s", nugetURL)
 

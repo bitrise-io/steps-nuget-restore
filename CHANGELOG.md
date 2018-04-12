@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.5)
+## Changelog (Current version: 1.0.6)
 
 -----------------
+
+### 1.0.6 (2018 Apr 12)
+
+* [f7a1295] Prepare for 1.0.6
+* [b0b6c3b]  Instead of updating to the latest nugget version, we will download t… (#23)
 
 ### 1.0.5 (2017 Oct 24)
 
@@ -53,4 +58,4 @@
 
 -----------------
 
-Updated: 2017 Oct 24
+Updated: 2018 Apr 12

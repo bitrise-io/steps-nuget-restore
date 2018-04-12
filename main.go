@@ -109,12 +109,11 @@ func main() {
 		downloadPth := filepath.Join(tmpDir, "nuget.exe")
 
 		// https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe
-		var nugetURL string
-		if configs.NugetVersion == "latest" {
-			nugetURL = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
-		} else {
-			nugetURL = fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/v%s/nuget.exe", configs.NugetVersion)
+		version := configs.NugetVersion
+		if version != "latest" {
+			version = `v` + version
 		}
+		nugetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/%s/nuget.exe", version)
 
 		log.Printf("Download URL: %s", nugetURL)
 

@@ -29,9 +29,7 @@ workflows:
     - script:
         title: Clone sapmle app
         inputs:
-        - content:
-            #!/bin/bash
-            git clone $SAMPLE_APP_URL .
+        - content: git clone $SAMPLE_APP_URL .
     - path::./:
         title: Step Test
         inputs:

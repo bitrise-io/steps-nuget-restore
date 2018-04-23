@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
@@ -108,6 +109,7 @@ func main() {
 
 		downloadPth := filepath.Join(tmpDir, "nuget.exe")
 
+		// https://dist.nuget.org/win-x86-commandline/latest/nuget.exe or
 		// https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe
 		version := configs.NugetVersion
 		if version != "latest" {
@@ -117,18 +119,18 @@ func main() {
 
 		log.Printf("Download URL: %s", nugetURL)
 
-		if err := DownloadFile(nugetURL, downloadPth); err != nil {
-			log.Warnf("Download failed, error: %s", err)
-
-			// https://dist.nuget.org/win-x86-commandline/v3.4.4/NuGet.exe
-			nugetURL = fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/v%s/NuGet.exe", configs.NugetVersion)
-
-			log.Printf("Retry download URl: %s", nugetURL)
-
+		if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+			if attempt > 0 {
+				log.Warnf("Retrying...")
+			}
 			if err := DownloadFile(nugetURL, downloadPth); err != nil {
 				log.Errorf("Failed to download nuget, error: %s", err)
-				os.Exit(1)
+				return err
 			}
+			return nil
+		}); err != nil {
+			log.Errorf("Failed to download nuget, error: %s", err)
+			os.Exit(1)
 		}
 
 		nugetRestoreCmdArgs = []string{constants.MonoPath, downloadPth}

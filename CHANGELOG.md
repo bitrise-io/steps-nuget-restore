@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.6)
+## Changelog (Current version: 1.0.7)
 
 -----------------
+
+### 1.0.7 (2018 Apr 24)
+
+* [d7c9d18] Prepare for 1.0.7
+* [6665fa5] Retry attempt added; (#24)
 
 ### 1.0.6 (2018 Apr 12)
 
@@ -58,4 +63,4 @@
 
 -----------------
 
-Updated: 2018 Apr 12
+Updated: 2018 Apr 24

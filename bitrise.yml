@@ -11,8 +11,14 @@ app:
 workflows:
   # ----------------------------------------------------------------
   # --- workflow to Step Test
-  ci:
+  test:
+    before_run:
+    - audit-this-step
     steps:
+    - go-list:
+    - golint:
+    - errcheck:
+    - go-test:
     - script:
         inputs:
         - content: |-
@@ -21,8 +27,7 @@ workflows:
             set -v
             rm -rf ./_tmp
     - change-workdir:
-        title: Switch working dir to test / _tmp dir
-        run_if: true
+        title: Switch working dir to ./_tmp dir
         inputs:
         - path: ./_tmp
         - is_create_path: true
@@ -32,8 +37,9 @@ workflows:
         - content: git clone $SAMPLE_APP_URL .
     - path::./:
         title: Step Test
+        run_if: true
         inputs:
-        - nuget_version: "latest"
+         - nuget_version: "latest"
     - script:
         title: Print cache paths
         inputs:

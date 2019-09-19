@@ -1,54 +1,48 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"github.com/bitrise-io/go-steputils/stepconf"
+	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-xamarin/constants"
+	"github.com/bitrise-tools/go-steputils/cache"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-tools/go-steputils/cache"
-	"github.com/bitrise-tools/go-xamarin/constants"
 )
 
 // ConfigsModel ...
 type ConfigsModel struct {
-	XamarinSolution string
-	NugetVersion    string
+	XamarinSolution string `env:"xamarin_solution,file"`
+	NuGetVersion    string `env:"nuget_version"`
+	AllowCaching    string `env:"allow_caching,opt[local,global,none]"`
 }
 
-func createConfigsModelFromEnvs() ConfigsModel {
-	return ConfigsModel{
-		XamarinSolution: os.Getenv("xamarin_solution"),
-		NugetVersion:    os.Getenv("nuget_version"),
-	}
+func fail(format string, v ...interface{}) {
+	log.Errorf(format, v...)
+	os.Exit(1)
 }
 
 func (configs ConfigsModel) print() {
 	log.Infof("Configs:")
 
 	log.Printf("- XamarinSolution: %s", configs.XamarinSolution)
-	log.Printf("- NugetVersion: %s", configs.NugetVersion)
+	log.Printf("- NuGetVersion: %s", configs.NuGetVersion)
 }
 
-func (configs ConfigsModel) validate() error {
-	if configs.XamarinSolution == "" {
-		return errors.New("no XamarinSolution parameter specified")
-	}
-	if exist, err := pathutil.IsPathExists(configs.XamarinSolution); err != nil {
-		return fmt.Errorf("failed to check if XamarinSolution exist at: %s, error: %s", configs.XamarinSolution, err)
-	} else if !exist {
-		return fmt.Errorf("xamarinSolution not exist at: %s", configs.XamarinSolution)
-	}
+const (
+	cacheInputNone   = "none"
+	cacheInputlocal  = "local"
+	cacheInputGlobal = "global"
 
-	return nil
-}
+	cacheEnvGlobal = "NUGET_PACKAGES"
+	cacheEnvHTTP   = "NUGET_HTTP_CACHE_PATH"
+)
 
 // DownloadFile ...
 func DownloadFile(downloadURL, targetPath string) error {
@@ -73,7 +67,7 @@ func DownloadFile(downloadURL, targetPath string) error {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("non success status code: %d", resp.StatusCode)
+		return fmt.Errorf("request failed, status code: %d", resp.StatusCode)
 	}
 
 	_, err = io.Copy(outFile, resp.Body)
@@ -84,74 +78,51 @@ func DownloadFile(downloadURL, targetPath string) error {
 	return nil
 }
 
-func main() {
-	configs := createConfigsModelFromEnvs()
-
+// downloadNugetWithVersion downloads NuGet with the given version.
+func downloadNugetWithVersion(nuGetRestoreCmdArgs *[]string, nugetVersion string) error {
 	fmt.Println()
-	configs.print()
-
-	if err := configs.validate(); err != nil {
-		log.Errorf("Issue with input: %s", err)
-		os.Exit(1)
+	log.Infof("Downloading NuGet %s version...", nugetVersion)
+	tmpDir, err := pathutil.NormalizedOSTempDirPath("__nuget__")
+	if err != nil {
+		return fmt.Errorf("failed to create tmp dir, error: %s", err)
 	}
 
-	nugetPth := "/Library/Frameworks/Mono.framework/Versions/Current/bin/nuget"
-	nugetRestoreCmdArgs := []string{nugetPth}
+	downloadPth := filepath.Join(tmpDir, "nuget.exe")
 
-	if configs.NugetVersion != "" {
-		fmt.Println()
-		log.Infof("Downloading Nuget %s version...", configs.NugetVersion)
-		tmpDir, err := pathutil.NormalizedOSTempDirPath("__nuget__")
-		if err != nil {
-			log.Errorf("Failed to create tmp dir, error: %s", err)
-			os.Exit(1)
-		}
+	// https://dist.nuget.org/win-x86-commandline/latest/nuget.exe or
+	// https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe
 
-		downloadPth := filepath.Join(tmpDir, "nuget.exe")
-
-		// https://dist.nuget.org/win-x86-commandline/latest/nuget.exe or
-		// https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe
-		version := configs.NugetVersion
-		if version != "latest" {
-			version = `v` + version
-		}
-		nugetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/%s/nuget.exe", version)
-
-		log.Printf("Download URL: %s", nugetURL)
-
-		if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
-			if attempt > 0 {
-				log.Warnf("Retrying...")
-			}
-			if err := DownloadFile(nugetURL, downloadPth); err != nil {
-				log.Errorf("Failed to download nuget, error: %s", err)
-				return err
-			}
-			return nil
-		}); err != nil {
-			log.Errorf("Failed to download nuget, error: %s", err)
-			os.Exit(1)
-		}
-
-		nugetRestoreCmdArgs = []string{constants.MonoPath, downloadPth}
+	if nugetVersion != "latest" {
+		nugetVersion = `v` + nugetVersion
 	}
+	nuGetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/%s/nuget.exe", nugetVersion)
 
-	fmt.Println()
-	log.Infof("Restoring Nuget packages...")
+	log.Printf("Download URL: %s", nuGetURL)
+	nuGetRestoreCmdArgs = &[]string{constants.MonoPath, downloadPth}
+	return retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+		if attempt > 0 {
+			log.Warnf("Retrying...")
+		}
+		if err := DownloadFile(nuGetURL, downloadPth); err != nil {
+			log.Errorf("Failed to download NuGet, error: %s", err)
+			return err
+		}
+		return nil
+	})
+}
 
-	nugetRestoreCmdArgs = append(nugetRestoreCmdArgs, "restore", configs.XamarinSolution)
-
-	if err := retry.Times(1).Try(func(attempt uint) error {
+// runRestoreCommand runs the restore command with the given args.
+func runRestoreCommand(nuGetRestoreCmdArgs []string) error {
+	return retry.Times(1).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.Warnf("Attempt %d failed, retrying...", attempt)
 		}
 
-		log.Donef("$ %s", command.PrintableCommandArgs(false, nugetRestoreCmdArgs))
+		log.Donef("$ %s", command.PrintableCommandArgs(false, nuGetRestoreCmdArgs))
 
-		cmd, err := command.NewFromSlice(nugetRestoreCmdArgs)
+		cmd, err := command.NewFromSlice(nuGetRestoreCmdArgs)
 		if err != nil {
-			log.Errorf("Failed to create Nuget command, error: %s", err)
-			os.Exit(1)
+			fail("Failed to create NuGet command, error: %s", err)
 		}
 
 		cmd.SetStdout(os.Stdout)
@@ -162,25 +133,57 @@ func main() {
 			return err
 		}
 		return nil
-	}); err != nil {
-		log.Errorf("Nuget restore failed, error: %s", err)
-		os.Exit(1)
+	})
+}
+
+// collectCaches collects the caches based on the allowed config.
+// For more information about caches please read: https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
+func collectCaches(allowCaching string) error {
+	nuGetCache := cache.New()
+	switch allowCaching {
+	case cacheInputNone:
+		return nil
+	case cacheInputlocal:
+		collectLocalCaches(&nuGetCache)
+	case cacheInputGlobal:
+		collectGlobalCaches(&nuGetCache)
 	}
+	return nuGetCache.Commit()
+}
 
-	// Collecting caches
-	fmt.Println()
-	log.Infof("Collecting NuGet cache...")
-
-	nugetCache := cache.New()
-
-	xamarinHomeCache := filepath.Join(pathutil.UserHomeDir(), ".local", "share", "Xamarin")
-
-	if exists, err := pathutil.IsPathExists(xamarinHomeCache); err != nil {
-		log.Warnf("Failed to determine if path (%s) exists, error: %s", xamarinHomeCache, err)
+// collectHTTPCaches collects the HTTP cache.
+func collectHTTPCaches(nuGetCache *cache.Cache) {
+	httpCachePth := getHTTPCachePath()
+	if exists, err := pathutil.IsPathExists(httpCachePth); err != nil {
+		log.Warnf("Failed to determine if path (%s) exists, error: %s", httpCachePth, err)
 	} else if exists {
-		nugetCache.IncludePath(xamarinHomeCache)
+		nuGetCache.IncludePath(httpCachePth)
 	}
+}
 
+// getHTTPCachePath gets the path for the HTTP cache.
+func getHTTPCachePath() string {
+	if os.Getenv(cacheEnvHTTP) != "" {
+		return os.Getenv(cacheEnvHTTP)
+	}
+	return filepath.Join(pathutil.UserHomeDir(), ".local", "share", "NuGet", "v3-cache")
+}
+
+// collectGlobalCaches collects the global package caches.
+func collectGlobalCaches(nuGetCache *cache.Cache) {
+	nuGetCache.IncludePath(getGlobalCachePath())
+}
+
+// getGlobalCachePath gets the path for the global cache.
+func getGlobalCachePath() string {
+	if os.Getenv(cacheEnvGlobal) != "" {
+		return os.Getenv(cacheEnvGlobal)
+	}
+	return filepath.Join(pathutil.UserHomeDir(), ".nuget", "packages")
+}
+
+// collectLocalCaches collects the local caches.
+func collectLocalCaches(nuGetCache *cache.Cache) {
 	absProjectRoot, err := filepath.Abs(".")
 	if err != nil {
 		log.Warnf("Cache collection skipped: failed to determine project root path.")
@@ -188,21 +191,47 @@ func main() {
 		err := filepath.Walk(absProjectRoot, func(path string, f os.FileInfo, err error) error {
 			if f.IsDir() {
 				if f.Name() == "packages" {
-					nugetCache.IncludePath(path)
+					nuGetCache.IncludePath(path)
 					return io.EOF
 				}
 			}
 			return nil
 		})
-		if err == io.EOF {
-			err = nil
-		}
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Warnf("Cache collection skipped: failed to determine cache paths.")
-		} else {
-			if err := nugetCache.Commit(); err != nil {
-				log.Warnf("Cache collection skipped: failed to commit cache paths.")
-			}
 		}
+	}
+}
+
+func main() {
+	var configs ConfigsModel
+	if err := stepconf.Parse(&configs); err != nil {
+		fail("Issue with input: %s", err)
+	}
+
+	fmt.Println()
+	configs.print()
+
+	nuGetPth := "/Library/Frameworks/Mono.framework/Versions/Current/bin/nuget"
+	nuGetRestoreCmdArgs := []string{nuGetPth}
+	if configs.NuGetVersion != "" {
+		if err := downloadNugetWithVersion(&nuGetRestoreCmdArgs, configs.NuGetVersion); err != nil {
+			fail("%s", err)
+		}
+	}
+
+	fmt.Println()
+	log.Infof("Restoring NuGet packages...")
+
+	nuGetRestoreCmdArgs = append(nuGetRestoreCmdArgs, "restore", configs.XamarinSolution)
+	if err := runRestoreCommand(nuGetRestoreCmdArgs); err != nil {
+		fail("NuGet restore failed, error: %s", err)
+	}
+
+	// Collecting caches
+	fmt.Println()
+	log.Infof("Collecting NuGet cache...")
+	if err := collectCaches(configs.AllowCaching); err != nil {
+		log.Warnf("Cache collection skipped: failed to commit cache paths.")
 	}
 }

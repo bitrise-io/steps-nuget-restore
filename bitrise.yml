@@ -28,29 +28,28 @@ workflows:
     - script:
         title: Clear tmp directory
         inputs:
-          - content: |-
-              #!/bin/bash
-              set -e
-              set -v
-              rm -rf ./_tmp
+        - content: |-
+            #!/bin/bash
+            set -e
+            set -v
+            rm -rf ./_tmp
     - change-workdir:
         title: Switch working dir to ./_tmp dir
         inputs:
-          - path: ./_tmp
-          - is_create_path: true
+        - path: ./_tmp
     - script:
         title: Clone sample app
         inputs:
-          - content: git clone $SAMPLE_APP_URL .
+        - content: git clone $SAMPLE_APP_URL .
 
   _clear_cache:
     steps:
     - script:
         title: Clear cache
         inputs:
-          - content: |-
-              #!/bin/bash
-              envman add --key "BITRISE_CACHE_INCLUDE_PATHS" --value ""
+        - content: |-
+            #!/bin/bash
+            envman add --key "BITRISE_CACHE_INCLUDE_PATHS" --value ""
 
   _test_local_cache:
     before_run:
@@ -60,23 +59,23 @@ workflows:
           title: Step Test with local caching
           run_if: true
           inputs:
-            - nuget_version: "latest"
-            - allow_caching: "local"
+          - nuget_version: "latest"
+          - allow_caching: "local"
       - script:
           title: Print and validate local cache paths
           inputs:
-            - content: |
-                #!/bin/bash
-                set -e
-                echo "Exported local cache dir is $BITRISE_CACHE_INCLUDE_PATHS"
-                DIR="$(pwd)/packages"
+          - content: |
+              #!/bin/bash
+              set -e
+              echo "Exported local cache dir is $BITRISE_CACHE_INCLUDE_PATHS"
+              DIR="$(pwd)/packages"
 
-                if [ $BITRISE_CACHE_INCLUDE_PATHS == $DIR ]; then
-                    echo "Local cache dir found correctly"
-                else
-                    echo "Did not found local cache dir correctly"
-                    exit 1
-                fi
+              if [ $BITRISE_CACHE_INCLUDE_PATHS == $DIR ]; then
+                  echo "Local cache dir found correctly"
+              else
+                  echo "Did not found local cache dir correctly"
+                  exit 1
+              fi
 
   _test_global_cache:
     before_run:
@@ -86,24 +85,24 @@ workflows:
           title: Step Test with global caching
           run_if: true
           inputs:
-            - nuget_version: "latest"
-            - allow_caching: "global"
+          - nuget_version: "latest"
+          - allow_caching: "global"
       - script:
           title: Print and validate global cache paths
           inputs:
-            - content: |
-                #!/bin/bash
-                set -e
-                echo "Exported global cache dir is $BITRISE_CACHE_INCLUDE_PATHS"
-                DIR=~/.nuget/packages
-                if [ $BITRISE_CACHE_INCLUDE_PATHS == $DIR ]; then
-                  echo "Global cache dir found correctly"
-                elif [ $BITRISE_CACHE_INCLUDE_PATHS == $NUGET_PACKAGES ]; then
-                  echo "Global cache dir found correctly from env variable"
-                else
-                  echo "Did not found global cache dir correctly"
-                  exit 1
-                fi
+          - content: |
+              #!/bin/bash
+              set -e
+              echo "Exported global cache dir is $BITRISE_CACHE_INCLUDE_PATHS"
+              DIR=~/.nuget/packages
+              if [ $BITRISE_CACHE_INCLUDE_PATHS == $DIR ]; then
+                echo "Global cache dir found correctly"
+              elif [ $BITRISE_CACHE_INCLUDE_PATHS == $NUGET_PACKAGES ]; then
+                echo "Global cache dir found correctly from env variable"
+              else
+                echo "Did not found global cache dir correctly"
+                exit 1
+              fi
 
   _test_no_cache:
     before_run:
@@ -113,22 +112,22 @@ workflows:
           title: Step Test with no caching
           run_if: true
           inputs:
-            - nuget_version: "latest"
-            - allow_caching: "none"
+          - nuget_version: "latest"
+          - allow_caching: "none"
       - script:
           title: Print and validate cache paths
           inputs:
-            - content: |
-                #!/bin/bash
-                set -e
-                echo "Exported global cache dir is $BITRISE_CACHE_INCLUDE_PATHS"
-                DIR=~/.nuget/packages
-                if [ -z $BITRISE_CACHE_INCLUDE_PATHS ]; then
-                  echo "Cache paths are empty"
-                else
-                  echo "Cache paths are not empty, but they should"
-                  exit 1
-                fi
+          - content: |
+              #!/bin/bash
+              set -e
+              echo "Exported global cache dir is $BITRISE_CACHE_INCLUDE_PATHS"
+              DIR=~/.nuget/packages
+              if [ -z $BITRISE_CACHE_INCLUDE_PATHS ]; then
+                echo "Cache paths are empty"
+              else
+                echo "Cache paths are not empty, but they should"
+                exit 1
+              fi
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library
@@ -136,10 +135,10 @@ workflows:
     steps:
       - script:
           inputs:
-            - content: |-
-                #!/bin/bash
-                set -ex
-                stepman audit --step-yml ./step.yml
+          - content: |-
+              #!/bin/bash
+              set -ex
+              stepman audit --step-yml ./step.yml
 
   share-this-step:
     envs:
@@ -174,9 +173,9 @@ workflows:
     steps:
       - script:
           inputs:
-            - content: |-
-                #!/bin/bash
-                set -ex
-                bitrise share start -c ${MY_STEPLIB_REPO_FORK_GIT_URL}
-                bitrise share create --stepid ${STEP_ID_IN_STEPLIB} --tag ${STEP_GIT_VERION_TAG_TO_SHARE} --git ${STEP_GIT_CLONE_URL}
-                bitrise share finish
+          - content: |-
+              #!/bin/bash
+              set -ex
+              bitrise share start -c ${MY_STEPLIB_REPO_FORK_GIT_URL}
+              bitrise share create --stepid ${STEP_ID_IN_STEPLIB} --tag ${STEP_GIT_VERION_TAG_TO_SHARE} --git ${STEP_GIT_CLONE_URL}
+              bitrise share finish

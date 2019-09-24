@@ -21,6 +21,7 @@ workflows:
       - _common
       - _test_local_cache
       - _test_global_cache
+      - _test_all_cache
       - _test_no_cache
 
   _common:
@@ -60,7 +61,7 @@ workflows:
           run_if: true
           inputs:
           - nuget_version: "latest"
-          - allow_caching: "local"
+          - cache_level: "local"
       - script:
           title: Print and validate local cache paths
           inputs:
@@ -71,10 +72,10 @@ workflows:
               DIR="$(pwd)/packages"
 
               if [ $BITRISE_CACHE_INCLUDE_PATHS == $DIR ]; then
-                  echo "Local cache dir found correctly"
+                echo "Local cache dir found correctly"
               else
-                  echo "Did not found local cache dir correctly"
-                  exit 1
+                echo "Did not found local cache dir correctly"
+                exit 1
               fi
 
   _test_global_cache:
@@ -86,7 +87,7 @@ workflows:
           run_if: true
           inputs:
           - nuget_version: "latest"
-          - allow_caching: "global"
+          - cache_level: "global"
       - script:
           title: Print and validate global cache paths
           inputs:
@@ -96,13 +97,50 @@ workflows:
               echo "Exported global cache dir is $BITRISE_CACHE_INCLUDE_PATHS"
               DIR=~/.nuget/packages
               if [ $BITRISE_CACHE_INCLUDE_PATHS == $DIR ]; then
-                echo "Global cache dir found correctly"
+                 echo "Global cache dir found correctly"
               elif [ $BITRISE_CACHE_INCLUDE_PATHS == $NUGET_PACKAGES ]; then
                 echo "Global cache dir found correctly from env variable"
               else
                 echo "Did not found global cache dir correctly"
                 exit 1
               fi
+
+  _test_all_cache:
+    before_run:
+      - _clear_cache
+    steps:
+      - path::./:
+          title: Step Test with all caching
+          run_if: true
+          inputs:
+            - nuget_version: "latest"
+            - cache_level: "all"
+      - script:
+          title: Print and validate all cache paths
+          inputs:
+            - content: |
+                #!/bin/bash
+                set -e
+                echo "Exported all cache dirs are $BITRISE_CACHE_INCLUDE_PATHS"
+                LOCALDIR="$(pwd)/packages"
+                if [ -z $NUGET_PACKAGES ]; then
+                  GLOBALDIR=~/.nuget/packages
+                else
+                  GLOBALDIR=$NUGET_PACKAGES
+                fi
+
+                if [[ "$BITRISE_CACHE_INCLUDE_PATHS" == *$LOCALDIR* ]]; then
+                   echo "Local cache dir found correctly"
+                else
+                  echo "Did not found local cache dir correctly"
+                  exit 1
+                fi
+                if [[ "$BITRISE_CACHE_INCLUDE_PATHS" == *$GLOBALDIR* ]]; then
+                  echo "Global cache dir found correctly"
+                else
+                  echo "Did not found global cache dir correctly"
+                  exit 1
+                fi
 
   _test_no_cache:
     before_run:
@@ -113,7 +151,7 @@ workflows:
           run_if: true
           inputs:
           - nuget_version: "latest"
-          - allow_caching: "none"
+          - cache_level: "none"
       - script:
           title: Print and validate cache paths
           inputs:

@@ -81,13 +81,13 @@ func DownloadFile(downloadURL, targetPath string) error {
 	return nil
 }
 
-// downloadNugetWithVersion downloads NuGet with the given version.
-func downloadNugetWithVersion(nuGetVersion string) ([]string, error) {
+// downloadNuGet downloads NuGet with the given version.
+func downloadNuGet(version string) (string, error) {
 	fmt.Println()
-	log.Infof("Downloading NuGet %s version...", nuGetVersion)
+	log.Infof("Downloading NuGet %s version...", version)
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__nuget__")
 	if err != nil {
-		return []string{}, fmt.Errorf("failed to create tmp dir, error: %s", err)
+		return "", fmt.Errorf("failed to create tmp dir, error: %s", err)
 	}
 
 	downloadPth := filepath.Join(tmpDir, "nuget.exe")
@@ -95,13 +95,13 @@ func downloadNugetWithVersion(nuGetVersion string) ([]string, error) {
 	// https://dist.nuget.org/win-x86-commandline/latest/nuget.exe or
 	// https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe
 
-	if nuGetVersion != "latest" {
-		nuGetVersion = `v` + nuGetVersion
+	if version != "latest" {
+		version = `v` + version
 	}
-	nuGetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/%s/nuget.exe", nuGetVersion)
+	nuGetURL := fmt.Sprintf("https://dist.nuget.org/win-x86-commandline/%s/nuget.exe", version)
 
 	log.Printf("Download URL: %s", nuGetURL)
-	return []string{constants.MonoPath, downloadPth}, retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+	return downloadPth, retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.Warnf("Retrying...")
 		}
@@ -229,10 +229,11 @@ func main() {
 	nuGetPth := "/Library/Frameworks/Mono.framework/Versions/Current/bin/nuget"
 	nuGetRestoreCmdArgs := []string{nuGetPth}
 	if configs.NuGetVersion != "" {
-		var err error
-		if nuGetRestoreCmdArgs, err = downloadNugetWithVersion(configs.NuGetVersion); err != nil {
+		downloadPth, err := downloadNuGet(configs.NuGetVersion)
+		if err != nil {
 			fail("%s", err)
 		}
+		nuGetRestoreCmdArgs = []string{constants.MonoPath, downloadPth}
 	}
 
 	fmt.Println()

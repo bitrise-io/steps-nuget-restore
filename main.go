@@ -140,11 +140,11 @@ func runRestoreCommand(nuGetRestoreCmdArgs []string) error {
 
 // collectCaches collects the caches based on the config.
 // For more information about caches please read: https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
-func collectCaches(cacheLevel string, basePth string) error {
+func collectCaches(cacheLevel string, basePth string) cache.Cache {
 	nuGetCache := cache.New()
 	switch cacheLevel {
 	case cacheInputNone:
-		return nil
+		return cache.Cache{}
 	case cacheInputlocal:
 		localCaches, err := collectLocalCaches(basePth)
 		if err != nil {
@@ -165,18 +165,18 @@ func collectCaches(cacheLevel string, basePth string) error {
 		}
 		nuGetCache.IncludePath(collectGlobalCaches())
 	}
-	return nuGetCache.Commit()
+	return nuGetCache
 }
 
 // collectHTTPCaches collects the HTTP cache.
-func collectHTTPCaches() string {
+func collectHTTPCaches() (string, error) {
 	httpCachePth := HTTPCachePath()
 	if exists, err := pathutil.IsPathExists(httpCachePth); err != nil {
-		log.Warnf("Failed to determine if path (%s) exists, error: %s", httpCachePth, err)
+		return "", fmt.Errorf("failed to determine if path (%s) exists, error: %s", httpCachePth, err)
 	} else if exists {
-		return httpCachePth
+		return httpCachePth, nil
 	}
-	return ""
+	return "", nil
 }
 
 // HTTPCachePath gets the path for the HTTP cache.
@@ -247,7 +247,8 @@ func main() {
 	// Collecting caches
 	fmt.Println()
 	log.Infof("Collecting NuGet cache...")
-	if err := collectCaches(configs.CacheLevel, path.Dir(configs.XamarinSolution)); err != nil {
+	caches := collectCaches(configs.CacheLevel, path.Dir(configs.XamarinSolution))
+	if err := caches.Commit(); err != nil {
 		log.Warnf("Cache collection skipped: failed to commit cache paths.")
 	}
 }

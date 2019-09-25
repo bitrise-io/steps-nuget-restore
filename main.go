@@ -44,7 +44,6 @@ const (
 	cacheInputAll    = "all"
 
 	cacheEnvGlobal = "NUGET_PACKAGES"
-	cacheEnvHTTP   = "NUGET_HTTP_CACHE_PATH"
 )
 
 // DownloadFile ...
@@ -56,12 +55,12 @@ func DownloadFile(downloadURL, targetPath string) error {
 		}
 	}()
 	if err != nil {
-		return fmt.Errorf("failed to create (%s), error: %s", targetPath, err)
+		return fmt.Errorf("failed to create (%s): %s", targetPath, err)
 	}
 
 	resp, err := http.Get(downloadURL)
 	if err != nil {
-		return fmt.Errorf("failed to download from (%s), error: %s", downloadURL, err)
+		return fmt.Errorf("failed to download from (%s): %s", downloadURL, err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -75,7 +74,7 @@ func DownloadFile(downloadURL, targetPath string) error {
 
 	_, err = io.Copy(outFile, resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to download from (%s), error: %s", downloadURL, err)
+		return fmt.Errorf("failed to download from (%s): %s", downloadURL, err)
 	}
 
 	return nil
@@ -87,7 +86,7 @@ func downloadNuGet(version string) (string, error) {
 	log.Infof("Downloading NuGet %s version...", version)
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__nuget__")
 	if err != nil {
-		return "", fmt.Errorf("failed to create tmp dir, error: %s", err)
+		return "", fmt.Errorf("failed to create tmp dir: %s", err)
 	}
 
 	downloadPth := filepath.Join(tmpDir, "nuget.exe")
@@ -106,7 +105,7 @@ func downloadNuGet(version string) (string, error) {
 			log.Warnf("Retrying...")
 		}
 		if err := DownloadFile(nuGetURL, downloadPth); err != nil {
-			log.Errorf("Failed to download NuGet, error: %s", err)
+			log.Errorf("Failed to download NuGet: %s", err)
 			return err
 		}
 		return nil
@@ -114,24 +113,24 @@ func downloadNuGet(version string) (string, error) {
 }
 
 // runRestoreCommand runs the restore command with the given args.
-func runRestoreCommand(nuGetRestoreCmdArgs []string) error {
+func runRestoreCommand(cmdArgs []string) error {
 	return retry.Times(1).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.Warnf("Attempt %d failed, retrying...", attempt)
 		}
 
-		log.Donef("$ %s", command.PrintableCommandArgs(false, nuGetRestoreCmdArgs))
+		log.Donef("$ %s", command.PrintableCommandArgs(false, cmdArgs))
 
-		cmd, err := command.NewFromSlice(nuGetRestoreCmdArgs)
+		cmd, err := command.NewFromSlice(cmdArgs)
 		if err != nil {
-			fail("Failed to create NuGet command, error: %s", err)
+			fail("Failed to create NuGet command: %s", err)
 		}
 
 		cmd.SetStdout(os.Stdout)
 		cmd.SetStderr(os.Stderr)
 
 		if err := cmd.Run(); err != nil {
-			log.Errorf("Restore failed, error: %s", err)
+			log.Errorf("Restore failed: %s", err)
 			return err
 		}
 		return nil
@@ -148,7 +147,7 @@ func collectCaches(cacheLevel string, basePth string) cache.Cache {
 	case cacheInputlocal:
 		localCaches, err := collectLocalCaches(basePth)
 		if err != nil {
-			log.Warnf("Error occurred while getting local cache. Error: %s", err)
+			log.Warnf("Error occurred while getting local cache: %s", err)
 		}
 		for _, lcItem := range localCaches {
 			nuGetCache.IncludePath(lcItem)
@@ -158,7 +157,7 @@ func collectCaches(cacheLevel string, basePth string) cache.Cache {
 	case cacheInputAll:
 		localCaches, err := collectLocalCaches(basePth)
 		if err != nil {
-			log.Warnf("Error occurred while getting all cache. Error: %s", err)
+			log.Warnf("Error occurred while getting all cache: %s", err)
 		}
 		for _, lcItem := range localCaches {
 			nuGetCache.IncludePath(lcItem)
@@ -166,25 +165,6 @@ func collectCaches(cacheLevel string, basePth string) cache.Cache {
 		nuGetCache.IncludePath(collectGlobalCaches())
 	}
 	return nuGetCache
-}
-
-// collectHTTPCaches collects the HTTP cache.
-func collectHTTPCaches() (string, error) {
-	httpCachePth := HTTPCachePath()
-	if exists, err := pathutil.IsPathExists(httpCachePth); err != nil {
-		return "", fmt.Errorf("failed to determine if path (%s) exists, error: %s", httpCachePth, err)
-	} else if exists {
-		return httpCachePth, nil
-	}
-	return "", nil
-}
-
-// HTTPCachePath gets the path for the HTTP cache.
-func HTTPCachePath() string {
-	if pth := os.Getenv(cacheEnvHTTP); pth != "" {
-		return pth
-	}
-	return filepath.Join(pathutil.UserHomeDir(), ".local", "share", "NuGet", "v3-cache")
 }
 
 // collectGlobalCaches collects the global package caches.
@@ -200,7 +180,7 @@ func collectLocalCaches(basePth string) ([]string, error) {
 	var caches []string
 	absProjectRoot, err := filepath.Abs(basePth)
 	if err != nil {
-		return []string{}, fmt.Errorf("cache collection skipped: failed to determine project root path")
+		return []string{}, fmt.Errorf("cache collection skipped: failed to determine project root path: %s", err)
 	}
 	if err := filepath.Walk(absProjectRoot, func(path string, f os.FileInfo, err error) error {
 		if f.IsDir() {
@@ -211,7 +191,7 @@ func collectLocalCaches(basePth string) ([]string, error) {
 		}
 		return nil
 	}); err != nil && err != io.EOF {
-		return []string{}, fmt.Errorf("cache collection skipped: failed to determine cache paths. Error: %s", err)
+		return []string{}, fmt.Errorf("cache collection skipped: failed to determine cache paths: %s", err)
 	}
 
 	return caches, nil
@@ -241,7 +221,7 @@ func main() {
 
 	nuGetRestoreCmdArgs = append(nuGetRestoreCmdArgs, "restore", configs.XamarinSolution)
 	if err := runRestoreCommand(nuGetRestoreCmdArgs); err != nil {
-		fail("NuGet restore failed, error: %s", err)
+		fail("NuGet restore failed: %s", err)
 	}
 
 	// Collecting caches
@@ -249,6 +229,6 @@ func main() {
 	log.Infof("Collecting NuGet cache...")
 	caches := collectCaches(configs.CacheLevel, path.Dir(configs.XamarinSolution))
 	if err := caches.Commit(); err != nil {
-		log.Warnf("Cache collection skipped: failed to commit cache paths.")
+		log.Warnf("Cache collection skipped: failed to commit cache paths: %s", err)
 	}
 }

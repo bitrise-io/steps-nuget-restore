@@ -49,14 +49,14 @@ const (
 // DownloadFile ...
 func DownloadFile(downloadURL, targetPath string) error {
 	outFile, err := os.Create(targetPath)
+	if err != nil {
+		return fmt.Errorf("failed to create (%s): %s", targetPath, err)
+	}
 	defer func() {
 		if err := outFile.Close(); err != nil {
 			log.Warnf("Failed to close (%s)", targetPath)
 		}
 	}()
-	if err != nil {
-		return fmt.Errorf("failed to create (%s): %s", targetPath, err)
-	}
 
 	resp, err := http.Get(downloadURL)
 	if err != nil {
@@ -74,7 +74,7 @@ func DownloadFile(downloadURL, targetPath string) error {
 
 	_, err = io.Copy(outFile, resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to download from (%s): %s", downloadURL, err)
+		return fmt.Errorf("failed to copy to (%v): %s", outFile, err)
 	}
 
 	return nil
@@ -105,7 +105,9 @@ func downloadNuGet(version string) (string, error) {
 			log.Warnf("Retrying...")
 		}
 		if err := DownloadFile(nuGetURL, downloadPth); err != nil {
-			log.Errorf("Failed to download NuGet: %s", err)
+			if attempt < 1 {
+				log.Warnf("Failed to download NuGet: %s", err)
+			}
 			return err
 		}
 		return nil
@@ -130,7 +132,9 @@ func runRestoreCommand(cmdArgs []string) error {
 		cmd.SetStderr(os.Stderr)
 
 		if err := cmd.Run(); err != nil {
-			log.Errorf("Restore failed: %s", err)
+			if attempt < 1 {
+				log.Warnf("Restore failed: %s", err)
+			}
 			return err
 		}
 		return nil
@@ -139,15 +143,15 @@ func runRestoreCommand(cmdArgs []string) error {
 
 // collectCaches collects the caches based on the config.
 // For more information about caches please read: https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
-func collectCaches(cacheLevel string, basePth string) cache.Cache {
+func collectCaches(cacheLevel string, basePth string) (cache.Cache, error) {
 	nuGetCache := cache.New()
 	switch cacheLevel {
 	case cacheInputNone:
-		return cache.Cache{}
+		return cache.Cache{}, nil
 	case cacheInputlocal:
 		localCaches, err := collectLocalCaches(basePth)
 		if err != nil {
-			log.Warnf("Error occurred while getting local cache: %s", err)
+			return nuGetCache, fmt.Errorf("error occurred while getting local cache: %s", err)
 		}
 		for _, lcItem := range localCaches {
 			nuGetCache.IncludePath(lcItem)
@@ -157,14 +161,14 @@ func collectCaches(cacheLevel string, basePth string) cache.Cache {
 	case cacheInputAll:
 		localCaches, err := collectLocalCaches(basePth)
 		if err != nil {
-			log.Warnf("Error occurred while getting all cache: %s", err)
+			return nuGetCache, fmt.Errorf("error occurred while getting all cache: %s", err)
 		}
 		for _, lcItem := range localCaches {
 			nuGetCache.IncludePath(lcItem)
 		}
 		nuGetCache.IncludePath(collectGlobalCaches())
 	}
-	return nuGetCache
+	return nuGetCache, nil
 }
 
 // collectGlobalCaches collects the global package caches.
@@ -180,7 +184,7 @@ func collectLocalCaches(basePth string) ([]string, error) {
 	var caches []string
 	absProjectRoot, err := filepath.Abs(basePth)
 	if err != nil {
-		return []string{}, fmt.Errorf("cache collection skipped: failed to determine project root path: %s", err)
+		return []string{}, fmt.Errorf("cache collection failed: failed to determine project root path: %s", err)
 	}
 	if err := filepath.Walk(absProjectRoot, func(path string, f os.FileInfo, err error) error {
 		if f.IsDir() {
@@ -191,7 +195,7 @@ func collectLocalCaches(basePth string) ([]string, error) {
 		}
 		return nil
 	}); err != nil && err != io.EOF {
-		return []string{}, fmt.Errorf("cache collection skipped: failed to determine cache paths: %s", err)
+		return []string{}, fmt.Errorf("cache collection failed: failed to determine cache paths: %s", err)
 	}
 
 	return caches, nil
@@ -227,8 +231,11 @@ func main() {
 	// Collecting caches
 	fmt.Println()
 	log.Infof("Collecting NuGet cache...")
-	caches := collectCaches(configs.CacheLevel, path.Dir(configs.XamarinSolution))
+	caches, err := collectCaches(configs.CacheLevel, path.Dir(configs.XamarinSolution))
+	if err != nil {
+		log.Warnf("Cache collection failed: %s", err)
+	}
 	if err := caches.Commit(); err != nil {
-		log.Warnf("Cache collection skipped: failed to commit cache paths: %s", err)
+		log.Warnf("Cache collection failed: failed to commit cache paths: %s", err)
 	}
 }

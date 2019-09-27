@@ -234,8 +234,9 @@ func main() {
 	caches, err := collectCaches(configs.CacheLevel, path.Dir(configs.XamarinSolution))
 	if err != nil {
 		log.Warnf("Cache collection failed: %s", err)
-	}
-	if err := caches.Commit(); err != nil {
-		log.Warnf("Cache collection failed: failed to commit cache paths: %s", err)
+	} else {
+		if err := caches.Commit(); err != nil {
+			log.Warnf("Cache collection failed: failed to commit cache paths: %s", err)
+		}
 	}
 }

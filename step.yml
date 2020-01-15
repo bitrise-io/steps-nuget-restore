@@ -1,6 +1,30 @@
 title: NuGet restore
-summary: NuGet restore step
-description: Restore your NuGet packages by simply adding this step to your workflow, after the `Git Clone` step.
+summary: |-
+ Installs packages with NuGet.
+description: |-
+  The **NuGet restore** Step downloads the latest or specified NuGet version and runs a restore with it to install missing .NET packages into the `.csproj`, `.fsproj` files of your Xamarin project.
+  You can check the installed packages in your build's log.
+
+  ### Configuring the Step
+  1. Add the **NuGet restore** Step to your Workflow after the **Git Clone Repository** Step so that the Step can download and install all the necessary packages.
+  2. Provide the **Path to Xamarin solution**. By default, the Step will use the same solution file that you have provided when you added your app, but you can also modify it if you wish.
+
+  Optionally, you can set what to cache if you click **Options** and then **Set the level of cache** input:
+  - `local` caches the packages in your build directory.
+  - `global` caches the global-packages folder and installs any downloaded package.
+  - `all` caches local and global.
+  - `none` disables caching for the Step.
+
+  ### Troubleshooting
+  If your build fails due to a specific NuGet version, you can try to run your build with another version. Click the **NuGet version** input and select a NuGet version.
+
+  ### Useful links
+  - [Available NuGet Distribution Versions](https://www.nuget.org/downloads)
+  - [About NuGet and caching](https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders)
+
+  ### Related Steps
+  - [Run yarn command](https://www.bitrise.io/integrations/steps/yarn)
+  - [Bundler](https://www.bitrise.io/integrations/steps/bundler) 
 website: https://github.com/bitrise-steplib/steps-nuget-restore
 source_code_url: https://github.com/bitrise-steplib/steps-nuget-restore
 support_url: https://github.com/bitrise-steplib/steps-nuget-restore/issues

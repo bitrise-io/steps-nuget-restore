@@ -2,7 +2,7 @@ title: NuGet restore
 summary: |-
  Installs packages with NuGet.
 description: |-
-  The **NuGet restore** Step downloads the latest or specified NuGet version and runs a restore with it to install missing .NET packages into the `.csproj`, `.fsproj` files of your Xamarin project.
+  The **NuGet restore** Step downloads the latest or specified NuGet version and runs a restore with it to install missing .NET packages based on your Xamarin solution (.sln).
   You can check the installed packages in your build's log.
 
   ### Configuring the Step
@@ -11,7 +11,7 @@ description: |-
 
   Optionally, you can set what to cache if you click **Options** and then **Set the level of cache** input:
   - `local` caches the packages in your build directory.
-  - `global` caches the global-packages folder and installs any downloaded package.
+  - `global` caches the global-packages folder.
   - `all` caches local and global.
   - `none` disables caching for the Step.
 
@@ -23,8 +23,8 @@ description: |-
   - [About NuGet and caching](https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders)
 
   ### Related Steps
-  - [Run yarn command](https://www.bitrise.io/integrations/steps/yarn)
-  - [Bundler](https://www.bitrise.io/integrations/steps/bundler) 
+  - [Xamarin Archive](https://www.bitrise.io/integrations/steps/xamarin-archive)
+  - [NUnit runner](https://www.bitrise.io/integrations/steps/nunit-runner) 
 website: https://github.com/bitrise-steplib/steps-nuget-restore
 source_code_url: https://github.com/bitrise-steplib/steps-nuget-restore
 support_url: https://github.com/bitrise-steplib/steps-nuget-restore/issues

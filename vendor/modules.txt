@@ -1,0 +1,24 @@
+# github.com/bitrise-io/go-steputils v0.0.0-20190806143347-f540824d77df
+## explicit
+github.com/bitrise-io/go-steputils/stepconf
+github.com/bitrise-io/go-steputils/tools
+# github.com/bitrise-io/go-utils v0.0.0-20190814105345-ad86bf775472
+## explicit
+github.com/bitrise-io/go-utils/colorstring
+github.com/bitrise-io/go-utils/command
+github.com/bitrise-io/go-utils/errorutil
+github.com/bitrise-io/go-utils/log
+github.com/bitrise-io/go-utils/parseutil
+github.com/bitrise-io/go-utils/pathutil
+github.com/bitrise-io/go-utils/pointers
+github.com/bitrise-io/go-utils/retry
+# github.com/bitrise-io/go-xamarin v0.0.0-20161026092853-b606925d252e
+## explicit
+github.com/bitrise-io/go-xamarin/constants
+# github.com/bitrise-tools/go-steputils v0.0.0-20190806143347-f540824d77df
+## explicit
+github.com/bitrise-tools/go-steputils/cache
+# github.com/stretchr/testify v1.7.0
+## explicit
+# gopkg.in/yaml.v2 v2.4.0
+## explicit
